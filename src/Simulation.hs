@@ -61,8 +61,8 @@ where
     simulationStep :: DataVars -> SimulationState -> SimulationState
     simulationStep dataVars currentState = run . addNextRequest (timeBetweenRequests dataVars) . startEvent $ currentState
         where run s
-                | actualTime s > tc s = mayWait (metersRequested dataVars) currentState
-                | otherwise = wait (acum currentState + metersRequested dataVars) currentState
+                | actualTime s > tc s = mayWait (metersRequested dataVars) s
+                | otherwise = wait (acum currentState + metersRequested dataVars) s
 
 
 
