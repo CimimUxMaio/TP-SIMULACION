@@ -1,55 +1,88 @@
-module Simulation where
+module Simulation 
+where
 
-import Text.Show.Functions
-import Control.Monad.ST.Lazy
+    import Text.Show.Functions
+
+    data DataVars = DataVars { metersRequested :: Meter, timeBetweenRequests :: Time }
+    data SimulationState = SimulationState { actualTime :: Time, tc :: Time, acum :: Meter, nextRequest :: Time } deriving (Show, Eq)
+    type Time = Float
+    type Meter = Int
+
+    furnanceCapacity :: Meter
+    furnanceCapacity = 1600
+
+    timePerCicle :: Time
+    timePerCicle = 6
+
+    ciclesNeeded :: Meter -> Int
+    ciclesNeeded = ceiling . (/ fromIntegral furnanceCapacity) . fromIntegral 
+
+    setTC :: Time -> SimulationState -> SimulationState 
+    setTC value currentState = currentState { tc = value }
+
+    setAcum :: Meter -> SimulationState -> SimulationState
+    setAcum value currentState = currentState { acum = value }
+
+    addTC :: Time -> SimulationState -> SimulationState
+    addTC value currentState = setTC (tc currentState + value) currentState
+
+    setActualTime :: Time -> SimulationState -> SimulationState 
+    setActualTime value currentState = currentState { actualTime = value }
+
+    addActualTime :: Time -> SimulationState -> SimulationState 
+    addActualTime value currentState = setActualTime (actualTime currentState + value) currentState
+
+    setNextRequest :: Time -> SimulationState -> SimulationState
+    setNextRequest value currentState = currentState { nextRequest = value }
+
+    addNextRequest :: Time -> SimulationState -> SimulationState
+    addNextRequest delta currentState = setNextRequest (nextRequest currentState + delta) currentState
 
 
-data StateVars = StateVars { tc :: Time, acum :: Meter }
-type Time = Float
-type Meter = Int
+    initialState :: SimulationState
+    initialState = SimulationState { tc = 0, actualTime = 0, acum = 0, nextRequest = 0 }
 
-furnanceCapacity :: Meter
-furnanceCapacity = 1600
+    startEvent :: SimulationState -> SimulationState
+    startEvent currentState = setActualTime (nextRequest currentState) currentState
 
-timePerCicle :: Time
-timePerCicle = 6
 
-ciclesNeeded :: Meter -> Int
-ciclesNeeded = ceiling . (/ fromIntegral furnanceCapacity) . fromIntegral 
+    mayWait :: Meter -> SimulationState -> SimulationState
+    mayWait amountRequested currentState = conditional . setTC (time + timePerCicle) $ currentState
+        where excess = amountRequested - furnanceCapacity
+              time = actualTime currentState
+              conditional = if excess > 0 then wait excess else dontWait
 
-setTC :: Time -> StateVars -> StateVars 
-setTC value stateVars = stateVars { tc = value }
+    dontWait :: SimulationState -> SimulationState
+    dontWait = setAcum 0
 
-setAcum :: Meter -> StateVars -> StateVars
-setAcum value stateVars = stateVars { acum = value }
+    wait :: Meter -> SimulationState -> SimulationState
+    wait excess = (\s -> addTC (fromIntegral . ciclesNeeded . acum $ s) s) . setAcum excess 
 
-mayWait :: Meter -> Time -> StateVars -> StateVars
-mayWait amountRequested time = conditional . setTC (time + timePerCicle)
-    where excess = amountRequested - furnanceCapacity
-          conditional = if excess > 0 then wait excess else dontWait
+    simulationStep :: DataVars -> SimulationState -> SimulationState
+    simulationStep dataVars currentState = run . addNextRequest (timeBetweenRequests dataVars) . startEvent $ currentState
+        where run s
+                | actualTime s > tc s = mayWait (metersRequested dataVars) currentState
+                | otherwise = wait (acum currentState + metersRequested dataVars) currentState
 
-dontWait :: StateVars -> StateVars
-dontWait = setAcum 0
 
-wait :: Meter -> StateVars -> StateVars
-wait excess = (\s -> addTC (fromIntegral . ciclesNeeded . acum $ s) s) . setAcum excess 
 
-addTC :: Time -> StateVars -> StateVars
-addTC value stateVars = setTC (tc stateVars + value) stateVars
+    deltaRequestTime :: IO Time
+    deltaRequestTime = return 5
 
-simulationStep :: Meter -> Time -> StateVars -> StateVars
-simulationStep amountRequested time stateVars
-    | time > tc stateVars = mayWait amountRequested time stateVars
-    | otherwise = wait (acum stateVars + amountRequested) stateVars
+    deltaMetersRequested :: IO Meter
+    deltaMetersRequested = return 1000
 
-timeBetweenRequests :: Time
-timeBetweenRequests = 5
 
-metersRequested :: Meter
-metersRequested = 1000
+    logState :: SimulationState -> IO () 
+    logState = print
 
-simulation :: Time -> StateVars
-simulation tf = runSimulation 0 StateVars { tc = 0, acum = 0 }
-    where runSimulation startingTime stateVars
-            | startingTime > tf = runSimulation (startingTime + timeBetweenRequests) (simulationStep metersRequested startingTime stateVars)
-            | otherwise = stateVars
+
+    simulation :: Time -> SimulationState -> IO SimulationState
+    simulation duration = run
+        where run currentState
+                | actualTime currentState > duration = return currentState
+                | otherwise = do requestInterval <- deltaRequestTime
+                                 amountRequested <- deltaMetersRequested
+                                 logState currentState
+                                 let dataVars = DataVars { metersRequested = amountRequested, timeBetweenRequests = requestInterval }
+                                 run . simulationStep dataVars $ currentState
