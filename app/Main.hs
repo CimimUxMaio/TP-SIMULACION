@@ -1,6 +1,5 @@
 module Main where
-
-import Lib
+import Simulation
 
 main :: IO ()
-main = someFunc
+main = putStrLn "To do..."

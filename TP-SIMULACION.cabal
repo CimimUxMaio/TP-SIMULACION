@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4422159de189551aa1a610e7eccf95178b3dfde5af51ab8983bfa40bac0d4a96
+-- hash: 1e23cac3d85d50d86266586ee2f2f8bd1d9e0a9912a6b35518554d9b73524e83
 
 name:           TP-SIMULACION
 version:        0.1.0.0
@@ -27,7 +27,7 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Simulation
   other-modules:
       Paths_TP_SIMULACION
   hs-source-dirs:
