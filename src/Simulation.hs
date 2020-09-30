@@ -4,7 +4,6 @@ import Text.Show.Functions
 import Control.Monad.ST.Lazy
 
 
-data StepGenerator = StepGenerator { time :: Time, requestedMeter :: Meter }
 data StateVars = StateVars { tc :: Time, acum :: Meter }
 type Time = Float
 type Meter = Int
@@ -42,3 +41,15 @@ simulationStep :: Meter -> Time -> StateVars -> StateVars
 simulationStep amountRequested time stateVars
     | time > tc stateVars = mayWait amountRequested time stateVars
     | otherwise = wait (acum stateVars + amountRequested) stateVars
+
+timeBetweenRequests :: Time
+timeBetweenRequests = 5
+
+metersRequested :: Meter
+metersRequested = 1000
+
+simulation :: Time -> StateVars
+simulation tf = runSimulation 0 StateVars { tc = 0, acum = 0 }
+    where runSimulation startingTime stateVars
+            | startingTime > tf = runSimulation (startingTime + timeBetweenRequests) (simulationStep metersRequested startingTime stateVars)
+            | otherwise = stateVars
