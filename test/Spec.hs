@@ -34,3 +34,9 @@ main = hspec $ do
            (nextRequest $ setNextRequest 0 initialState) `shouldBe` 0
        it "setNextRequest should not return a state with diferent fields than the original other than nextRequest" $ do
            setNextRequest 0 initialState `shouldBe` initialState
+
+   describe "addTC/2" $ do
+       it "addTC 10 to a state with tc = 10 should return a state with tc = 20" $ do
+           (tc $ addTC 10 (initialState { tc = 10 })) `shouldBe` 20
+       it "addTC 0 to a state with tc = 0 should return an identical state" $ do
+           addTC 0 initialState `shouldBe` initialState
