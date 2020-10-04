@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 09cccfbefb1f7b8985d4801db6d53c09e0a52ee3488ab3878db13877586ea152
+-- hash: 5c96ad5431b3c8df831209176951f3657eb0989fbebc048fe50ad0c1ebaf8179
 
 name:           TP-SIMULACION
 version:        0.1.0.0
@@ -34,6 +34,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
+      ,random
   default-language: Haskell2010
 
 executable TP-SIMULACION-exe
@@ -46,6 +47,7 @@ executable TP-SIMULACION-exe
   build-depends:
       TP-SIMULACION
     , base >=4.7 && <5
+    , random
   default-language: Haskell2010
 
 test-suite TP-SIMULACION-test
