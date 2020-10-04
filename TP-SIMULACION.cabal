@@ -34,7 +34,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
-      ,random
+    , random
   default-language: Haskell2010
 
 executable TP-SIMULACION-exe
